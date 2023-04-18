@@ -98,6 +98,7 @@ def add_Route():
 
 def read_box():
     count = 0
+    tree_1.delete(*tree_1.get_children())
     for record in select_all(Box):
         if count % 2 == 0:  # even
             tree_1.insert(parent='', index='end', text='', values=record, tags=('evenrow',))
@@ -106,6 +107,7 @@ def read_box():
         count += 1
 def read_craft():
     count = 0
+    tree2_1.delete(*tree2_1.get_children())
     for record in select_all(Aircraft):
         if count % 2 == 0:  # even
             tree2_1.insert(parent='', index='end', text='', values=record, tags=('evenrow',))
@@ -115,6 +117,7 @@ def read_craft():
 
 def read_route():
     count = 0
+    tree3_1.delete(*tree3_1.get_children())
     for record in select_all(Route):
         if count % 2 == 0:  # even
             tree3_1.insert(parent='', index='end', text='', values=record, tags=('evenrow',))
