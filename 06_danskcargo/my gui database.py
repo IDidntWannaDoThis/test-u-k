@@ -5,6 +5,9 @@ from sqlalchemy.orm import declarative_base, Session
 from sqlalchemy import Column, String, Integer,Float
 from sqlalchemy import create_engine
 from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session
+from sqlalchemy import create_engine, select, update, delete
+
 
 Database = 'sqlite:///../data/thesqldata.db'
 Base = declarative_base()
@@ -115,6 +118,35 @@ def read_craft():
             tree2_1.insert(parent='', index='end', text='', values=record, tags=('oddrow',))
         count += 1
 
+
+
+def delete_hard_container():
+    index_selected = tree_1.focus()  # Index of selected tuple
+    values = tree_1.item(index_selected, 'values')  # Values of selected tuple  # Fill entry boxes
+
+    # delete a record in the container table
+    with Session(engine) as session:
+        session.execute(delete(Box).where(Box.id == index_selected.id))
+        session.commit()
+
+def delete_hard_craft():
+    index_selected = tree2_1.focus()  # Index of selected tuple
+    values = tree2_1.item(index_selected, 'values')  # Values of selected tuple  # Fill entry boxes
+
+    # delete a record in the container table
+    with Session(engine) as session:
+        session.execute(delete(Aircraft).where(Aircraft.id == index_selected.id))
+        session.commit()
+
+def delete_hard_route():
+    index_selected = tree_1.focus()  # Index of selected tuple
+    values = tree_1.item(index_selected, 'values')  # Values of selected tuple  # Fill entry boxes
+
+    # delete a record in the container table
+    with Session(engine) as session:
+        session.execute(delete(Route).where(Route.id == index_selected.id))
+        session.commit()
+
 def read_route():
     count = 0
     tree3_1.delete(*tree3_1.get_children())
@@ -201,7 +233,7 @@ button_1.grid(row=2, column=0, padx=padx, pady=pady)
 button_2 = tk.Button(containerp3, text="update", command=read_box)  # create a button
 button_2.grid(row=2, column=1, padx=padx, pady=pady)
 
-button_3 = tk.Button(containerp3, text="delete", command=empty_entry)  # create a button
+button_3 = tk.Button(containerp3, text="delete", command=delete_hard_container)  # create a button
 button_3.grid(row=2, column=2, padx=padx, pady=pady)
 
 button_4 = tk.Button(containerp3, text="clear entry boxes", command=empty_entry)  # create a button
@@ -264,7 +296,7 @@ button2_1.grid(row=2, column=0, padx=padx, pady=pady)
 button2_2 = tk.Button(container2p3, text="update", command=read_craft)  # create a button
 button2_2.grid(row=2, column=1, padx=padx, pady=pady)
 
-button2_3 = tk.Button(container2p3, text="delete", command=empty_entry)  # create a button
+button2_3 = tk.Button(container2p3, text="delete", command=delete_hard_craft)  # create a button
 button2_3.grid(row=2, column=2, padx=padx, pady=pady)
 
 
@@ -336,7 +368,7 @@ button3_1.grid(row=2, column=0, padx=padx, pady=pady)
 button3_2 = tk.Button(container3p3, text="update", command=read_route)  # create a button
 button3_2.grid(row=2, column=1, padx=padx, pady=pady)
 
-button3_3 = tk.Button(container3p3, text="delete", command=empty_entry)  # create a button
+button3_3 = tk.Button(container3p3, text="delete", command=delete_hard_route)  # create a button
 button3_3.grid(row=2, column=2, padx=padx, pady=pady)
 
 button3_4 = tk.Button(container3p3, text="clear entry boxes", command=empty_entry)  # create a button
