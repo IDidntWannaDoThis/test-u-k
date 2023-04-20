@@ -51,6 +51,9 @@ class Route(Base):
     def __repr__(self):  # Only for testing/debugging purposes.
         return f"{self.id} {self.data}  {self.airid}  {self.conid}"
 
+def tuple_To_box(tuple_):  # Convert tuple to Container
+    container = Box(id=tuple_[0], weight=tuple_[1], destination=tuple_[2])
+    return container
 
 def create_data(data):  # Optional. Used to test data base functions before gui is ready.
     with Session(engine) as session:
@@ -122,29 +125,30 @@ def read_craft():
 
 def delete_hard_container():
     index_selected = tree_1.focus()  # Index of selected tuple
-    values = tree_1.item(index_selected, 'values')  # Values of selected tuple  # Fill entry boxes
+    values = tree_1.item(index_selected)  # Values of selected tuple  # Fill entry boxes
+    container = dcd.Container.convert_from_tuple(values)
 
     # delete a record in the container table
     with Session(engine) as session:
-        session.execute(delete(Box).where(Box.id == index_selected.id))
+        session.execute(delete(Box).where(Box.id == values.id))
         session.commit()
 
 def delete_hard_craft():
     index_selected = tree2_1.focus()  # Index of selected tuple
-    values = tree2_1.item(index_selected, 'values')  # Values of selected tuple  # Fill entry boxes
+    values = tree2_1.item(index_selected)  # Values of selected tuple  # Fill entry boxes
 
     # delete a record in the container table
     with Session(engine) as session:
-        session.execute(delete(Aircraft).where(Aircraft.id == index_selected.id))
+        session.execute(delete(Aircraft).where(Aircraft.id == values.id))
         session.commit()
 
 def delete_hard_route():
     index_selected = tree_1.focus()  # Index of selected tuple
-    values = tree_1.item(index_selected, 'values')  # Values of selected tuple  # Fill entry boxes
+    values = tree_1.item(index_selected)  # Values of selected tuple  # Fill entry boxes
 
     # delete a record in the container table
     with Session(engine) as session:
-        session.execute(delete(Route).where(Route.id == index_selected.id))
+        session.execute(delete(Route).where(Route.id == values.id))
         session.commit()
 
 def read_route():
