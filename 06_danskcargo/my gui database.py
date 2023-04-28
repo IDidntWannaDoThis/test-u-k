@@ -159,6 +159,11 @@ def delete_hard_route():
         session.execute(delete(Route).where(Route.id == container.id))
         session.commit()
 
+def write_container_entries(values):  # Fill entry boxes
+    entry_1.insert(0, values[0])
+    entry_2.insert(0, values[1])
+    entry_3.insert(0, values[2])
+
 def read_route():
     count = 0
     tree3_1.delete(*tree3_1.get_children())
