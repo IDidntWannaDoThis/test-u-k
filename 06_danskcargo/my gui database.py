@@ -197,13 +197,13 @@ def update_box(tree, record):  # update tuple in database
 def update_craft(tree, record):  # update tuple in database
     container = Aircraft.convert_from_tuple(record)  # Convert tuple to Container
     update_container(container)  # Update database
-    clear_container_entries()  # Clear entry boxes
+    clear_craft_entries()  # Clear entry boxes
     refresh_treeview(tree, Aircraft)  # Refresh treeview table
 
 def update_route(tree, record):  # update tuple in database
     container = Route.convert_from_tuple(record)  # Convert tuple to Container
-    update_Route(container)  # Update database
-    clear_entries()  # Clear entry boxes
+    update_container(container)  # Update database
+    clear_route_entries()  # Clear entry boxes
     refresh_treeview(tree, Route)  # Refresh treeview table
 
 
