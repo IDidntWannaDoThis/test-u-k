@@ -55,7 +55,6 @@ def update_container(tree, record):  # update tuple in database
     clear_container_entries()  # Clear entry boxes
     refresh_treeview(tree, dcd.Container)  # Refresh treeview table
 
-
 def delete_container(tree, record):  # delete tuple in database
     container = dcd.Container.convert_from_tuple(record)  # Convert tuple to Container
     dcsql.delete_soft_container(container)  # Update database

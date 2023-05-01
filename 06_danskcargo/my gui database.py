@@ -140,6 +140,11 @@ def delete_hard_container():
     with Session(engine) as session:
         session.execute(delete(Box).where(Box.id == container.id))
         session.commit()
+def clear_container_entries():  # Clear entry boxes
+    entry_1.delete(0, tk.END)  # Delete text in entry box, beginning with the first character (0) and ending with the last character (tk.END)
+    entry_2.delete(0, tk.END)
+    entry_3.delete(0, tk.END)
+    entry_4.delete(0, tk.END)
 
 def delete_hard_craft():
     index_selected = tree_1.focus()  # Index of selected tuple
@@ -164,6 +169,16 @@ def write_container_entries(values):  # Fill entry boxes
     entry_2.insert(0, values[1])
     entry_3.insert(0, values[2])
 
+def write_route_entries(values):  # Fill entry boxes
+    entry3_1.insert(0, values[0])
+    entry3_2.insert(0, values[1])
+    entry3_3.insert(0, values[2])
+
+def write_craft_entries(values):  # Fill entry boxes
+    entry2_1.insert(0, values[0])
+    entry2_2.insert(0, values[1])
+    entry2_3.insert(0, values[2])
+
 def read_route():
     count = 0
     tree3_1.delete(*tree3_1.get_children())
@@ -173,6 +188,24 @@ def read_route():
         else:  # odd
             tree3_1.insert(parent='', index='end', text='', values=record, tags=('oddrow',))
         count += 1
+
+def update_box(tree, record):  # update tuple in database
+    container = Box.convert_from_tuple(record)  # Convert tuple to Container
+    update_container(container)  # Update database
+    clear_container_entries()  # Clear entry boxes
+    refresh_treeview(tree, Box)  # Refresh treeview table
+def update_craft(tree, record):  # update tuple in database
+    container = Aircraft.convert_from_tuple(record)  # Convert tuple to Container
+    update_container(container)  # Update database
+    clear_container_entries()  # Clear entry boxes
+    refresh_treeview(tree, Aircraft)  # Refresh treeview table
+
+def update_route(tree, record):  # update tuple in database
+    container = Route.convert_from_tuple(record)  # Convert tuple to Container
+    update_Route(container)  # Update database
+    clear_entries()  # Clear entry boxes
+    refresh_treeview(tree, Route)  # Refresh treeview table
+
 
 
 padx = 8
