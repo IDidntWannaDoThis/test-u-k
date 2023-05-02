@@ -3,8 +3,6 @@ from tkinter import ttk
 
 from sqlalchemy.orm import declarative_base, Session
 from sqlalchemy import Column, String, Integer,Float
-from sqlalchemy import create_engine
-from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, select, update, delete
 
