@@ -385,7 +385,7 @@ def delete_hard_transport(transport):
 
 def select_all(classparam):  # https://docs.sqlalchemy.org/en/14/tutorial/data_select.html
     # return a list of all records in classparams table
-    with Session(Engine) as session: #xxxxx
+    with Session(Engine) as session: #x6
         records = session.scalars(select(classparam))  # very useful for converting into our data class
         result = []
         for record in records:
