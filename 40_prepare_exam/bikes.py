@@ -1,18 +1,17 @@
 
 import tkinter as tk
-from tkinter import ttk
-from tkinter import messagebox
+from tkinter import ttk, messagebox
+
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy import String, Integer, Date
+from sqlalchemy import Integer, Date
 from dateutil import parser
-from tkinter import messagebox
 from sqlalchemy.orm import Session
-from sqlalchemy import create_engine, select, update, delete, extract
+from sqlalchemy import select, update, delete, extract,event
 from datetime import date
 from sqlalchemy.engine import Engine
-from sqlalchemy import event
 
+Database = 'sqlite:///../bakes.db'
 Base = declarative_base()  # creating the registry and declarative base classes - combined into one step. Base will serve as the base class for the ORM mapped classes we declare.
 # region global constants
 padx = 8  # Horizontal distance to neighboring objects
@@ -54,7 +53,7 @@ class Route(Base):
     __tablename__ = "route"
     id = Column(Integer, primary_key=True)
     max_capacity = Column(Integer)
-    difficulty = Column(String)
+    difficulty = Column(Integer)
 
     def __repr__(self):  # Optional. Only for test purposes.
         return f"{self.id}   {self.max_capacity}  {self.difficulty}"
@@ -76,23 +75,22 @@ class Route(Base):
             #     id_ = int(tuple_[0])
             # else:
             #     id_ = 0
+            hardness = int(tuple_[2])
             max_cargo_weight = int(tuple_[1])
-            if max_cargo_weight < 0:
-                messagebox.showwarning("", "Max. Cargo Weight must not be negative!")
-            else:
-                aircraft = Route(id=tuple_[0], max_capacity=max_cargo_weight, difficulty=tuple_[2])
-                # aircraft = Aircraft(id=id_, max_cargo_weight=max_cargo_weight, registration=tuple_[2])
-                return aircraft
+
+            aircraft = Route(id=tuple_[0], max_capacity=max_cargo_weight, difficulty=tuple_[2])
+            # aircraft = Aircraft(id=id_, max_cargo_weight=max_cargo_weight, registration=tuple_[2])
+            return aircraft
         except:
-            messagebox.showwarning("", "Entries could not be converted to aircraft!")
+            messagebox.showwarning("", "Entries could not be converted to route!")
 
 
 class Booking(Base):
     __tablename__ = "transport"
     id = Column(Integer, primary_key=True)
     date = Column(Date)
-    team_id = Column(Integer, ForeignKey("team.id"), nullable=False)
-    route_id = Column(Integer, ForeignKey("route.id"), nullable=False)
+    team_id = Column(Integer, ForeignKey("Team.id"), nullable=False)
+    route_id = Column(Integer, ForeignKey("Route.id"), nullable=False)
 
     def __repr__(self):  # Optional. Only for test purposes.
         return f"{self.id} {self.date} {self.team_id} {self.route_id}"
@@ -118,7 +116,7 @@ class Booking(Base):
             container_id = int(tuple_[2])
             aircraft_id = int(tuple_[3])
             # transport = Transport(id=tuple_[0], date=date, container_id=tuple_[2], aircraft_id=tuple_[3])  # unnecessary precaution?
-            transport = Booking(id=id_, date=date, Team_id=container_id, route_id=aircraft_id)
+            transport = Booking(id=id_, date=date, team_id=container_id, route_id=aircraft_id)
             return transport
         except:
             messagebox.showwarning("", "Entries could not be converted to transport!")
@@ -192,8 +190,6 @@ def clear_container_entries():  # Clear entry boxes
     entry_container_id.delete(0, tk.END)  # Delete text in entry box, beginning with the first character (0) and ending with the last character (tk.END)
     entry_container_weight.delete(0, tk.END)
     entry_container_destination.delete(0, tk.END)
-    entry_container_weather.delete(0, tk.END)
-
 
 def write_container_entries(values):  # Fill entry boxes
     entry_container_id.insert(0, values[0])
@@ -335,8 +331,8 @@ def edit_transport(event, tree):  # Copy selected tuple into entry boxes. Parame
 
 def create_transport(tree, record):  # add new tuple to database
     transport = Booking.convert_from_tuple(record)  # Convert tuple to Transport
-    capacity_ok = capacity_available(get_record(Route, transport.aircraft_id), transport.date, get_record(Team, transport.container_id))
-    destination_ok = max_one_destination(get_record(Route, transport.aircraft_id), transport.date, get_record(Team, transport.container_id))
+    capacity_ok = capacity_available(get_record(Route, transport.route_id), transport.date, get_record(Team, transport.team_id))
+    destination_ok = max_one_destination(get_record(Route, transport.route_id), transport.date, get_record(Team, transport.team_id))
     if destination_ok:
         if capacity_ok:
             create_record(transport)  # Update database
@@ -352,8 +348,8 @@ def create_transport(tree, record):  # add new tuple to database
 
 def update_transport(tree, record):  # update tuple in database
     transport = Booking.convert_from_tuple(record)  # Convert tuple to Transport
-    capacity_ok = capacity_available(get_record(Route, transport.aircraft_id), transport.date, get_record(Team, transport.container_id))
-    destination_ok = max_one_destination(get_record(Route, transport.aircraft_id), transport.date, get_record(Team, transport.container_id))
+    capacity_ok = capacity_available(get_record(Route, transport.route_id), transport.date, get_record(Team, transport.team_id))
+    destination_ok = max_one_destination(get_record(Route, transport.route_id), transport.date, get_record(Team, transport.team_id))
     if destination_ok:
         if capacity_ok:
             update_transport(transport)  # Update database
@@ -389,7 +385,7 @@ def delete_hard_transport(transport):
 
 def select_all(classparam):  # https://docs.sqlalchemy.org/en/14/tutorial/data_select.html
     # return a list of all records in classparams table
-    with Session(Engine) as session:
+    with Session(Engine) as session: #xxx
         records = session.scalars(select(classparam))  # very useful for converting into our data class
         result = []
         for record in records:
@@ -436,7 +432,7 @@ style.map('Treeview', background=[('selected', treeview_selected)])  # Define co
 
 # region container widgets
 # Define Labelframe which contains all container related GUI objects (data table, labels, buttons, ...)
-frame_container = tk.LabelFrame(main_window, text="Container")  # https://www.tutorialspoint.com/python/tk_labelframe.htm
+frame_container = tk.LabelFrame(main_window, text="Team")  # https://www.tutorialspoint.com/python/tk_labelframe.htm
 frame_container.grid(row=0, column=0, padx=padx, pady=pady, sticky=tk.N)  # https://www.tutorialspoint.com/python/tk_grid.htm
 
 # Define data table (Treeview) and its scrollbar. Put them in a Frame.
@@ -449,15 +445,15 @@ tree_container.grid(row=0, column=0, padx=0, pady=pady)
 tree_scroll_container.config(command=tree_container.yview)
 
 # Define the data table's formatting and content
-tree_container['columns'] = ("id", "weight", "destination")  # Define columns
+tree_container['columns'] = ("id", "skill", "size")  # Define columns
 tree_container.column("#0", width=0, stretch=tk.NO)  # Format columns. Suppress the irritating first empty column.
 tree_container.column("id", anchor=tk.E, width=40)  # "E" stands for East, meaning Right. Possible anchors are N, NE, E, SE, S, SW, W, NW and CENTER
-tree_container.column("weight", anchor=tk.E, width=80)
-tree_container.column("destination", anchor=tk.W, width=200)
+tree_container.column("skill", anchor=tk.E, width=80)
+tree_container.column("size", anchor=tk.W, width=200)
 tree_container.heading("#0", text="", anchor=tk.W)  # Create column headings
 tree_container.heading("id", text="Id", anchor=tk.CENTER)
-tree_container.heading("weight", text="Weight", anchor=tk.CENTER)
-tree_container.heading("destination", text="Destination", anchor=tk.CENTER)
+tree_container.heading("skill", text="skill", anchor=tk.CENTER)
+tree_container.heading("size", text="size", anchor=tk.CENTER)
 tree_container.tag_configure('oddrow', background=oddrow)  # Create tags for rows in 2 different colors
 tree_container.tag_configure('evenrow', background=evenrow)
 
@@ -477,20 +473,15 @@ label_container_id.grid(row=0, column=0, padx=padx, pady=pady)
 entry_container_id = tk.Entry(edit_frame_container, width=4, justify="right")  # https://www.tutorialspoint.com/python/tk_entry.htm
 entry_container_id.grid(row=1, column=0, padx=padx, pady=pady)
 # label and entry for container weight
-label_container_weight = tk.Label(edit_frame_container, text="Weight")
+label_container_weight = tk.Label(edit_frame_container, text="skill")
 label_container_weight.grid(row=0, column=1, padx=padx, pady=pady)
 entry_container_weight = tk.Entry(edit_frame_container, width=8, justify="right")
 entry_container_weight.grid(row=1, column=1, padx=padx, pady=pady)
 # label and entry for container destination
-label_container_destination = tk.Label(edit_frame_container, text="Destination")
+label_container_destination = tk.Label(edit_frame_container, text="size")
 label_container_destination.grid(row=0, column=2, padx=padx, pady=pady)
 entry_container_destination = tk.Entry(edit_frame_container, width=20)
 entry_container_destination.grid(row=1, column=2, padx=padx, pady=pady)
-# label and entry for container destination
-label_container_weather = tk.Label(edit_frame_container, text="Weather")
-label_container_weather.grid(row=0, column=3, padx=padx, pady=pady)
-entry_container_weather = tk.Entry(edit_frame_container, width=14)
-entry_container_weather.grid(row=1, column=3, padx=padx, pady=pady)
 
 # Define Frame which contains buttons
 button_frame_container = tk.Frame(controls_frame_container)
@@ -509,7 +500,7 @@ button_clear_boxes.grid(row=0, column=4, padx=padx, pady=pady)
 
 # region aircraft widgets
 # Define Labelframe which contains all aircraft related GUI objects (data table, labels, buttons, ...)
-frame_aircraft = tk.LabelFrame(main_window, text="Aircraft")  # https://www.tutorialspoint.com/python/tk_labelframe.htm
+frame_aircraft = tk.LabelFrame(main_window, text="Route")  # https://www.tutorialspoint.com/python/tk_labelframe.htm
 frame_aircraft.grid(row=0, column=1, padx=padx, pady=pady, sticky=tk.N)  # https://www.tutorialspoint.com/python/tk_grid.htm
 
 # Define data table (Treeview) and its scrollbar. Put them in a Frame.
@@ -522,15 +513,15 @@ tree_aircraft.grid(row=0, column=0, padx=0, pady=pady)
 tree_scroll_aircraft.config(command=tree_aircraft.yview)
 
 # Define the data table's formatting and content
-tree_aircraft['columns'] = ("id", "max_cargo_weight", "registration")  # Define columns
+tree_aircraft['columns'] = ("id", "max_capacity", "difficulty")  # Define columns
 tree_aircraft.column("#0", width=0, stretch=tk.NO)  # Format columns. Suppress the irritating first empty column.
 tree_aircraft.column("id", anchor=tk.E, width=40)  # "E" stands for East, meaning Right. Possible anchors are N, NE, E, SE, S, SW, W, NW and CENTER
-tree_aircraft.column("max_cargo_weight", anchor=tk.E, width=100)
-tree_aircraft.column("registration", anchor=tk.W, width=100)
+tree_aircraft.column("max_capacity", anchor=tk.E, width=100)
+tree_aircraft.column("difficulty", anchor=tk.W, width=100)
 tree_aircraft.heading("#0", text="", anchor=tk.W)  # Create column headings
 tree_aircraft.heading("id", text="Id", anchor=tk.CENTER)
-tree_aircraft.heading("max_cargo_weight", text="Max.Carg.Wgt.", anchor=tk.CENTER)
-tree_aircraft.heading("registration", text="Registration", anchor=tk.CENTER)
+tree_aircraft.heading("max_capacity", text="Max Capacity", anchor=tk.CENTER)
+tree_aircraft.heading("difficulty", text="difficulty", anchor=tk.CENTER)
 tree_aircraft.tag_configure('oddrow', background=oddrow)  # Create tags for rows in 2 different colors
 tree_aircraft.tag_configure('evenrow', background=evenrow)
 
@@ -550,12 +541,12 @@ label_aircraft_id.grid(row=0, column=0, padx=padx, pady=pady)
 entry_aircraft_id = tk.Entry(edit_frame_aircraft, width=4, justify="right")  # https://www.tutorialspoint.com/python/tk_entry.htm
 entry_aircraft_id.grid(row=1, column=0, padx=padx, pady=pady)
 # label and entry for aircraft weight
-label_aircraft_max_cargo_weight = tk.Label(edit_frame_aircraft, text="Max.Carg.Wgt.")
+label_aircraft_max_cargo_weight = tk.Label(edit_frame_aircraft, text="Max Capacity")
 label_aircraft_max_cargo_weight.grid(row=0, column=1, padx=padx, pady=pady)
 entry_aircraft_max_cargo_weight = tk.Entry(edit_frame_aircraft, width=8, justify="right")
 entry_aircraft_max_cargo_weight.grid(row=1, column=1, padx=padx, pady=pady)
 # label and entry for aircraft destination
-label_aircraft_registration = tk.Label(edit_frame_aircraft, text="Registration")
+label_aircraft_registration = tk.Label(edit_frame_aircraft, text="difficulty")
 label_aircraft_registration.grid(row=0, column=2, padx=padx, pady=pady)
 entry_aircraft_registration = tk.Entry(edit_frame_aircraft, width=9)
 entry_aircraft_registration.grid(row=1, column=2, padx=padx, pady=pady)
@@ -577,7 +568,7 @@ button_clear_boxes.grid(row=0, column=4, padx=padx, pady=pady)
 
 # region transport widgets
 # Define Labelframe which contains all transport related GUI objects (data table, labels, buttons, ...)
-frame_transport = tk.LabelFrame(main_window, text="Transport")  # https://www.tutorialspoint.com/python/tk_labelframe.htm
+frame_transport = tk.LabelFrame(main_window, text="Booking")  # https://www.tutorialspoint.com/python/tk_labelframe.htm
 frame_transport.grid(row=0, column=2, padx=padx, pady=pady, sticky=tk.N)  # https://www.tutorialspoint.com/python/tk_grid.htm
 
 # Define data table (Treeview) and its scrollbar. Put them in a Frame.
@@ -590,17 +581,17 @@ tree_transport.grid(row=0, column=0, padx=0, pady=pady)
 tree_scroll_transport.config(command=tree_transport.yview)
 
 # Define the data table's formatting and content
-tree_transport['columns'] = ("id", "date", "container_id", "aircraft_id")  # Define columns
+tree_transport['columns'] = ("id", "date", "team_id", "route_id")  # Define columns
 tree_transport.column("#0", width=0, stretch=tk.NO)  # Format columns. Suppress the irritating first empty column.
 tree_transport.column("id", anchor=tk.E, width=40)  # "E" stands for East, meaning Right. Possible anchors are N, NE, E, SE, S, SW, W, NW and CENTER
 tree_transport.column("date", anchor=tk.E, width=80)
-tree_transport.column("container_id", anchor=tk.E, width=70)
-tree_transport.column("aircraft_id", anchor=tk.E, width=70)
+tree_transport.column("team_id", anchor=tk.E, width=70)
+tree_transport.column("route_id", anchor=tk.E, width=70)
 tree_transport.heading("#0", text="", anchor=tk.W)  # Create column headings
 tree_transport.heading("id", text="Id", anchor=tk.CENTER)
 tree_transport.heading("date", text="Date", anchor=tk.CENTER)
-tree_transport.heading("container_id", text="Container Id", anchor=tk.CENTER)
-tree_transport.heading("aircraft_id", text="Aircraft Id", anchor=tk.CENTER)
+tree_transport.heading("team_id", text="Team Id", anchor=tk.CENTER)
+tree_transport.heading("route_id", text="Route Id", anchor=tk.CENTER)
 tree_transport.tag_configure('oddrow', background=oddrow)  # Create tags for rows in 2 different colors
 tree_transport.tag_configure('evenrow', background=evenrow)
 
@@ -624,12 +615,12 @@ label_transport_date.grid(row=0, column=1, padx=padx, pady=pady)
 entry_transport_date = tk.Entry(edit_frame_transport, width=10)
 entry_transport_date.grid(row=1, column=1, padx=padx, pady=pady)
 # label and entry for transport destination
-label_transport_container_id = tk.Label(edit_frame_transport, text="Container Id")
+label_transport_container_id = tk.Label(edit_frame_transport, text="Team Id")
 label_transport_container_id.grid(row=0, column=2, padx=padx, pady=pady)
 entry_transport_container_id = tk.Entry(edit_frame_transport, width=4, justify="right")
 entry_transport_container_id.grid(row=1, column=2, padx=padx, pady=pady)
 # label and entry for transport destination
-label_transport_aircraft_id = tk.Label(edit_frame_transport, text="Aircraft Id")
+label_transport_aircraft_id = tk.Label(edit_frame_transport, text="Route Id")
 label_transport_aircraft_id.grid(row=0, column=3, padx=padx, pady=pady)
 entry_transport_aircraft_id = tk.Entry(edit_frame_transport, width=4, justify="right")
 entry_transport_aircraft_id.grid(row=1, column=3, padx=padx, pady=pady)
@@ -648,6 +639,9 @@ button_clear_boxes = tk.Button(button_frame_transport, text="Clear Entry Boxes",
 button_clear_boxes.grid(row=0, column=4, padx=padx, pady=pady)
 # endregion transport widgets
 
+Team(id=1, skill=1, size=2)
+Route(id=1, max_capacity=6,difficulty=0 )
+Booking(id=1, date=date.today(), team_id=1, route_id=1)
 
 if __name__ == "__main__":  # Executed when invoked directly. We use this so main_window.mainloop() does not keep our unit tests from running.
     refresh_treeview(tree_container, Team)  # Load data from database
