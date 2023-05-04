@@ -7,12 +7,14 @@ from sqlalchemy import Column, ForeignKey
 from sqlalchemy import Integer, Date
 from dateutil import parser
 from sqlalchemy.orm import Session
-from sqlalchemy import select, update, delete, extract,event
+from sqlalchemy import create_engine, select, update, delete, extract, event
 from datetime import date
-from sqlalchemy.engine import Engine
 
-Database = 'sqlite:///../bakes.db'
+Database = 'sqlite:///bakes.db'
 Base = declarative_base()  # creating the registry and declarative base classes - combined into one step. Base will serve as the base class for the ORM mapped classes we declare.
+engine = create_engine(Database, echo=False, future=True)  # https://docs.sqlalchemy.org/en/14/tutorial/engine.html   The start of any SQLAlchemy application is an object called the Engine. This object acts as a central source of connections to a particular database, providing both a factory as well as a holding space called a connection pool for these database connections. The engine is typically a global object created just once for a particular database server, and is configured using a URL string which will describe how it should connect to the database host or backend.
+Base.metadata.create_all(engine)
+
 # region global constants
 padx = 8  # Horizontal distance to neighboring objects
 pady = 4  # Vertical distance to neighboring objects
@@ -124,13 +126,13 @@ class Booking(Base):
 
 def get_record(classparam, record_id):  # https://docs.sqlalchemy.org/en/14/tutorial/data_select.html
     # return the record in classparams table with a certain id
-    with Session(Engine) as session:
+    with Session(engine) as session:
         record = session.scalars(select(classparam).where(classparam.id == record_id)).first()  # very useful for converting into our data class
     return record
 
 def booked_cargo(aircraft, date_):
     # returns the already booked cargo on an aircraft at a certain date
-    with Session(Engine) as session:
+    with Session(engine) as session:
         records = session.scalars(select(Booking).where(Booking.route_id == aircraft.id).where(extract('day', Booking.date) == date_.day).where(extract('month', Booking.date) == date_.month).where(extract('year', Booking.date) == date_.year))
         weight = 0
         for record in records:
@@ -140,7 +142,7 @@ def booked_cargo(aircraft, date_):
 
 def find_destination(aircraft, date_):
     # return an aircraft's destination at a certain date in the transport table
-    with Session(Engine) as session:
+    with Session(engine) as session:
         records = session.scalars(select(Booking).where(Booking.team_id_id == aircraft.id).where(extract('day', Booking.date) == date_.day).where(extract('month', Booking.date) == date_.month).where(extract('year', Booking.date) == date_.year))
         for record in records:
             return get_record(Team, record.team_id).destination
@@ -161,14 +163,14 @@ def max_one_destination(aircraft, date_, new_container):
 
 def delete_hard_container(container):
     # delete a record in the container table
-    with Session(Engine) as session:
+    with Session(engine) as session:
         session.execute(delete(Team).where(Team.id == container.id))
         session.commit()  # makes changes permanent in database
 
 
 def delete_soft_container(container):
     # soft delete a record in the container table by setting its weight to -1 (see also method "valid" in the container class)
-    with Session(Engine) as session:
+    with Session(engine) as session:
         session.execute(update(Team).where(Team.id == container.id).values(weight=-1, destination=container.destination))
         session.commit()  # makes changes permanent in database
 # endregion container
@@ -176,7 +178,7 @@ def delete_soft_container(container):
 
 def create_record(record):  # https://docs.sqlalchemy.org/en/14/tutorial/orm_data_manipulation.html#orm-enabled-update-statements
     # create a record in the database
-    with Session(Engine) as session:
+    with Session(engine) as session:
         record.id = None
         session.add(record)
         session.commit()  # makes changes permanent in database
@@ -225,21 +227,21 @@ def delete_container(tree, record):  # delete tuple in database
 
 def update_aircraft(aircraft):  # https://docs.sqlalchemy.org/en/14/tutorial/orm_data_manipulation.html#orm-enabled-update-statements
     # update a record in the aircraft table
-    with Session(Engine) as session:
+    with Session(engine) as session:
         session.execute(update(Route).where(Route.id == aircraft.id).values(max_capacity=aircraft.max_cargo_weight, registration=aircraft.registration))
         session.commit()  # makes changes permanent in database
 
 
 def delete_hard_aircraft(aircraft):
     # delete a record in the aircraft table
-    with Session(Engine) as session:
+    with Session(engine) as session:
         session.execute(delete(Route).where(Route.id == aircraft.id))
         session.commit()  # makes changes permanent in database
 
 
 def delete_soft_aircraft(aircraft):
     # soft delete a record in the aircraft table by setting its max_cargo_weight to -1 (see also method "valid" in the aircraft class)
-    with Session(Engine) as session:
+    with Session(engine) as session:
         session.execute(update(Route).where(Route.id == aircraft.id).values(max_Capacity=-1, registration=aircraft.registration))
         session.commit()  # makes changes permanent in database
 # endregion aircraft
@@ -371,21 +373,21 @@ def delete_transport(tree, record):  # delete tuple in database
 # endregion transport functions
 def update_transport(transport):  # https://docs.sqlalchemy.org/en/14/tutorial/orm_data_manipulation.html#orm-enabled-update-statements
     # update a record in the transport table
-    with Session(Engine) as session:
+    with Session(engine) as session:
         session.execute(update(Booking).where(Booking.id == transport.id).values(date=transport.date, Team_id=transport.Team_id, route_id=transport.route_id))
         session.commit()  # makes changes permanent in database
 
 
 def delete_hard_transport(transport):
     # delete a record in the transport table
-    with Session(Engine) as session:
+    with Session(engine) as session:
         session.execute(delete(Booking).where(Booking.id == transport.id))
         session.commit()  # makes changes permanent in database
 # endregion transport
 
 def select_all(classparam):  # https://docs.sqlalchemy.org/en/14/tutorial/data_select.html
     # return a list of all records in classparams table
-    with Session(Engine) as session: #x6
+    with Session(engine) as session: #x6
         records = session.scalars(select(classparam))  # very useful for converting into our data class
         result = []
         for record in records:
@@ -639,13 +641,15 @@ button_clear_boxes = tk.Button(button_frame_transport, text="Clear Entry Boxes",
 button_clear_boxes.grid(row=0, column=4, padx=padx, pady=pady)
 # endregion transport widgets
 
-Team(id=1, skill=1, size=2)
-Route(id=1, max_capacity=6,difficulty=0 )
-Booking(id=1, date=date.today(), team_id=1, route_id=1)
+
+
+
 
 if __name__ == "__main__":  # Executed when invoked directly. We use this so main_window.mainloop() does not keep our unit tests from running.
-    refresh_treeview(tree_container, Team)  # Load data from database
-    refresh_treeview(tree_aircraft, Route)  # Load data from database
-    refresh_treeview(tree_transport, Booking)  # Load data from database
+
+
+    #refresh_treeview(tree_container, Team)  # Load data from database
+    #refresh_treeview(tree_aircraft, Route)  # Load data from database
+    #refresh_treeview(tree_transport, Booking)  # Load data from database
     main_window.mainloop()  # Wait for button clicks and act upon them
 
